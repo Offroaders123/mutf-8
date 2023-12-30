@@ -5,37 +5,6 @@
  */
 
 /**
- * The options for decoder.
- */
-export interface TextDecoderOptions {
-  /** `true` to stop processing when an error occurs, `false` otherwise. */
-  fatal?: boolean;
-
-  /** Whther to ignore the BOM or not. */
-  ignoreBOM?: boolean;
-}
-
-/**
- * The options for decoding.
- */
-export interface TextDecodeOptions {
-  stream?: boolean;
-}
-
-/**
- * The result of encoding.
- */
-export interface TextEncoderEncodeIntoResult {
-  /** The number of converted code units of source. */
-  read: number;
-
-  /** The number of bytes modified in destination. */
-  written: number;
-}
-
-type AllowSharedBufferSource = ArrayBuffer | SharedArrayBuffer | ArrayBufferView;
-
-/**
  * The decoder for Modified UTF-8.
  *
  * @example
@@ -51,31 +20,8 @@ type AllowSharedBufferSource = ArrayBuffer | SharedArrayBuffer | ArrayBufferView
  *
  * @see {@link https://encoding.spec.whatwg.org/}
  */
-export class MUtf8Decoder {
-  #fatal: boolean;
-
-  #ignoreBOM: boolean;
-
-  /**
-   * @returns Always `"mutf-8"`.
-   */
-  get encoding(): string {
-    return "mutf-8";
-  }
-
-  /**
-   * @returns `true` if error mode is fatal, otherwise `false`.
-   */
-  get fatal(): boolean {
-    return this.#fatal;
-  }
-
-  /**
-   * @returns Whether to ignore the BOM or not.
-   */
-  get ignoreBOM(): boolean {
-    return this.#ignoreBOM;
-  }
+export class MUtf8Decoder extends TextDecoder {
+  override readonly encoding = "mutf-8";
 
   /**
    * @param label   - The label of the encoder. Must be `"mutf-8"` or `"mutf8"`.
@@ -87,8 +33,7 @@ export class MUtf8Decoder {
     if (normalizedLabel !== "mutf-8" && normalizedLabel !== "mutf8") {
       throw new RangeError(`MUtf8Decoder.constructor: '${label}' is not supported.`);
     }
-    this.#fatal = options.fatal ?? false;
-    this.#ignoreBOM = options.ignoreBOM ?? false;
+    super("utf-8",options);
   }
 
   /**
@@ -100,13 +45,14 @@ export class MUtf8Decoder {
    * @throws {TypeError} If {@link fatal} is `true` and the `input` is invalid bytes.
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  decode(input: AllowSharedBufferSource, options: TextDecodeOptions = {}): string {
+  override decode(input: AllowSharedBufferSource, options: TextDecodeOptions = {}): string {
+    options;
     const buf = input instanceof Uint8Array ? input : new Uint8Array("buffer" in input ? input.buffer : input);
     const length = buf.length;
     const result: string[] = [];
     let p = 0;
     while (p < length) {
-      const b1 = buf[p++];
+      const b1 = buf[p++]!;
       if (!(b1 & 0x80) && b1 !== 0) {
         // U+0001-007F
         result.push(String.fromCharCode(b1));
@@ -116,7 +62,7 @@ export class MUtf8Decoder {
           this.#handleError(result);
           continue;
         }
-        const b2 = buf[p++];
+        const b2 = buf[p++]!;
         if (b2 >>> 6 !== 0b10) {
           this.#handleError(result);
           continue;
@@ -128,8 +74,8 @@ export class MUtf8Decoder {
           this.#handleError(result);
           continue;
         }
-        const b2 = buf[p++];
-        const b3 = buf[p++];
+        const b2 = buf[p++]!;
+        const b3 = buf[p++]!;
         if (b2 >>> 6 !== 0b10 || b3 >>> 6 !== 0b10) {
           this.#handleError(result);
           continue;
@@ -146,7 +92,7 @@ export class MUtf8Decoder {
     return result.join("");
   }
 
-  #handleError(result: string[]) {
+  #handleError(result: string[]): void {
     if (this.fatal) {
       throw new TypeError("MUtf8Decoder.decode: Decoding failed.");
     }
@@ -169,13 +115,11 @@ export class MUtf8Decoder {
  *
  * @see {@link https://encoding.spec.whatwg.org/}
  */
-export class MUtf8Encoder {
+export class MUtf8Encoder extends TextEncoder {
   /**
-   * @returns Always `"mutf-8"`.
+   * Returns "mutf-8".
    */
-  get encoding(): string {
-    return "mutf-8";
-  }
+  override readonly encoding = "mutf-8";
 
   /**
    * Encodes the specified string in MUTF-8.
@@ -183,11 +127,11 @@ export class MUtf8Encoder {
    * @param input - The string to be encoded.
    * @returns The resultant bytes.
    */
-  encode(input = ""): Uint8Array {
+  override encode(input = ""): Uint8Array {
     const bin: number[] = [];
     for (const c of input) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const code = c.codePointAt(0)!;
+      const code: number = c.codePointAt(0)!;
       if (0x0001 <= code && code <= 0x007f) {
         bin.push(code);
       } else if (code <= 0x07ff) {
@@ -216,13 +160,13 @@ export class MUtf8Encoder {
    * @param destination - The bytes to be stored the result.
    * @returns The progress.
    */
-  encodeInto(source: string, destination: Uint8Array): TextEncoderEncodeIntoResult {
+  override encodeInto(source: string, destination: Uint8Array): TextEncoderEncodeIntoResult {
     const destLen = destination.length;
     let i = 0;
     let read = 0;
     for (const c of source) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const code = c.codePointAt(0)!;
+      const code: number = c.codePointAt(0)!;
       if (0x0001 <= code && code <= 0x007f) {
         if (destLen <= i) break;
         destination[i++] = code;
