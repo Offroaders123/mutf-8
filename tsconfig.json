@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "lib": ["es2022"],
     "moduleResolution": "node",
-    "outDir": "dist",
     "strict": true,
     "target": "es2018"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts"]
+  }
 }
