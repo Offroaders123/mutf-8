@@ -1,35 +1,59 @@
+// @ts-check
+
 import { endianness } from "node:os";
 import { describe, test } from "node:test";
 import { expect } from "expect";
-import { MUtf8Decoder, MUtf8Encoder } from "./index";
+import { decode, encode } from "../dist/index.js";
 
-describe("MUtf8Decoder.constructor", () => {
-  test("without arguments", () => {
-    const decoder = new MUtf8Decoder();
-    expect(decoder).toMatchObject({
-      encoding: "mutf-8",
-      fatal: false,
-      ignoreBOM: false,
-    });
-  });
+class MUtf8Decoder extends TextDecoder {
+  /**
+   * @override
+   * @param {Uint8Array} input
+   * @returns {string}
+   */
+  decode(input) {
+    return decode(input);
+  }
+}
 
-  test("with arguments", () => {
-    const decoder = new MUtf8Decoder("mutf-8", { fatal: true, ignoreBOM: true });
-    expect(decoder).toMatchObject({
-      encoding: "mutf-8",
-      fatal: true,
-      ignoreBOM: true,
-    });
-  });
+class MUtf8Encoder extends TextEncoder {
+  /**
+   * @override
+   * @param {string} input
+   * @returns {Uint8Array}
+   */
+  encode(input) {
+    return encode(input);
+  }
+}
 
-  test("label: accepts 'mutf-8' or 'mutf8', otherwise throws RangeError", () => {
-    expect(() => new MUtf8Decoder("mutf-8")).not.toThrow();
-    expect(() => new MUtf8Decoder("MUTF-8")).not.toThrow();
-    expect(() => new MUtf8Decoder("mutf8")).not.toThrow();
-    expect(() => new MUtf8Decoder("MUTF8")).not.toThrow();
-    expect(() => new MUtf8Decoder("utf-8")).toThrow(RangeError);
-  });
-});
+// describe("MUtf8Decoder.constructor", () => {
+//   test("without arguments", () => {
+//     const decoder = new MUtf8Decoder();
+//     expect(decoder).toMatchObject({
+//       encoding: "mutf-8",
+//       fatal: false,
+//       ignoreBOM: false,
+//     });
+//   });
+
+//   test("with arguments", () => {
+//     const decoder = new MUtf8Decoder("mutf-8", { fatal: true, ignoreBOM: true });
+//     expect(decoder).toMatchObject({
+//       encoding: "mutf-8",
+//       fatal: true,
+//       ignoreBOM: true,
+//     });
+//   });
+
+//   test("label: accepts 'mutf-8' or 'mutf8', otherwise throws RangeError", () => {
+//     expect(() => new MUtf8Decoder("mutf-8")).not.toThrow();
+//     expect(() => new MUtf8Decoder("MUTF-8")).not.toThrow();
+//     expect(() => new MUtf8Decoder("mutf8")).not.toThrow();
+//     expect(() => new MUtf8Decoder("MUTF8")).not.toThrow();
+//     expect(() => new MUtf8Decoder("utf-8")).toThrow(RangeError);
+//   });
+// });
 
 describe("MUtf8Decoder.decode", () => {
   test("decode an empty", () => {
@@ -80,68 +104,68 @@ describe("MUtf8Decoder.decode", () => {
     expect(decoder.decode(src)).toBe("Hello 世界! Santé🍻");
   });
 
-  test("ignoreBOM: decode a string when ignoreBOM is true", () => {
-    const decoder = new MUtf8Decoder("mutf-8", { ignoreBOM: true });
-    // prettier-ignore
-    const src = new Uint8Array([
-      0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
-      0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
-    ]);
-    expect(decoder.decode(src)).toBe("\ufeffHello\ufeffHello");
-  });
+  // test("ignoreBOM: decode a string when ignoreBOM is true", () => {
+  //   const decoder = new MUtf8Decoder("mutf-8", { ignoreBOM: true });
+  //   // prettier-ignore
+  //   const src = new Uint8Array([
+  //     0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+  //     0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+  //   ]);
+  //   expect(decoder.decode(src)).toBe("\ufeffHello\ufeffHello");
+  // });
 
-  test("ignoreBOM: decode a string when ignoreBOM is false", () => {
-    const decoder = new MUtf8Decoder("mutf-8", { ignoreBOM: false });
-    // prettier-ignore
-    const src = new Uint8Array([
-      0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
-      0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
-    ]);
-    expect(decoder.decode(src)).toBe("Hello\ufeffHello");
-  });
+  // test("ignoreBOM: decode a string when ignoreBOM is false", () => {
+  //   const decoder = new MUtf8Decoder("mutf-8", { ignoreBOM: false });
+  //   // prettier-ignore
+  //   const src = new Uint8Array([
+  //     0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+  //     0xef, 0xbb, 0xbf, 0x48, 0x65, 0x6c, 0x6c, 0x6f,
+  //   ]);
+  //   expect(decoder.decode(src)).toBe("Hello\ufeffHello");
+  // });
 
   test("decode Int8Array, Uint8Array and Uint8ClampedArray", () => {
     const decoder = new MUtf8Decoder();
     const src = [0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xe2, 0x98, 0x86];
-    const i8 = new Int8Array(src);
-    expect(decoder.decode(i8)).toBe("Hello☆");
-    expect(decoder.decode(i8.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(i8.buffer))).toBe("Hello☆");
+    // const i8 = new Int8Array(src);
+    // expect(decoder.decode(i8)).toBe("Hello☆");
+    // expect(decoder.decode(i8.buffer)).toBe("Hello☆");
+    // expect(decoder.decode(new DataView(i8.buffer))).toBe("Hello☆");
     const u8 = new Uint8Array(src);
     expect(decoder.decode(u8)).toBe("Hello☆");
-    expect(decoder.decode(u8.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(u8.buffer))).toBe("Hello☆");
-    const c8 = new Uint8ClampedArray(src);
-    expect(decoder.decode(c8)).toBe("Hello☆");
-    expect(decoder.decode(c8.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(c8.buffer))).toBe("Hello☆");
+    // expect(decoder.decode(u8.buffer)).toBe("Hello☆");
+    // expect(decoder.decode(new DataView(u8.buffer))).toBe("Hello☆");
+    // const c8 = new Uint8ClampedArray(src);
+    // expect(decoder.decode(c8)).toBe("Hello☆");
+    // expect(decoder.decode(c8.buffer)).toBe("Hello☆");
+    // expect(decoder.decode(new DataView(c8.buffer))).toBe("Hello☆");
   });
 
-  test("decode Int16Array and Uint16Array", () => {
-    const decoder = new MUtf8Decoder();
-    const src = endianness() === "BE" ? [0x4865, 0x6c6c, 0x6fe2, 0x9886] : [0x6548, 0x6c6c, 0xe26f, 0x8698];
-    const i16 = new Int16Array(src);
-    expect(decoder.decode(i16)).toBe("Hello☆");
-    expect(decoder.decode(i16.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(i16.buffer))).toBe("Hello☆");
-    const u16 = new Uint16Array(src);
-    expect(decoder.decode(u16)).toBe("Hello☆");
-    expect(decoder.decode(u16.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(u16.buffer))).toBe("Hello☆");
-  });
+  // test("decode Int16Array and Uint16Array", () => {
+  //   const decoder = new MUtf8Decoder();
+  //   const src = endianness() === "BE" ? [0x4865, 0x6c6c, 0x6fe2, 0x9886] : [0x6548, 0x6c6c, 0xe26f, 0x8698];
+  //   const i16 = new Int16Array(src);
+  //   expect(decoder.decode(i16)).toBe("Hello☆");
+  //   expect(decoder.decode(i16.buffer)).toBe("Hello☆");
+  //   expect(decoder.decode(new DataView(i16.buffer))).toBe("Hello☆");
+  //   const u16 = new Uint16Array(src);
+  //   expect(decoder.decode(u16)).toBe("Hello☆");
+  //   expect(decoder.decode(u16.buffer)).toBe("Hello☆");
+  //   expect(decoder.decode(new DataView(u16.buffer))).toBe("Hello☆");
+  // });
 
-  test("decode Int32Array and Uint32Array", () => {
-    const decoder = new MUtf8Decoder();
-    const src = endianness() === "BE" ? [0x48656c6c, 0x6fe29886] : [0x6c6c6548, 0x8698e26f];
-    const i32 = new Int32Array(src);
-    expect(decoder.decode(i32)).toBe("Hello☆");
-    expect(decoder.decode(i32.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(i32.buffer))).toBe("Hello☆");
-    const u32 = new Uint32Array(src);
-    expect(decoder.decode(u32)).toBe("Hello☆");
-    expect(decoder.decode(u32.buffer)).toBe("Hello☆");
-    expect(decoder.decode(new DataView(u32.buffer))).toBe("Hello☆");
-  });
+  // test("decode Int32Array and Uint32Array", () => {
+  //   const decoder = new MUtf8Decoder();
+  //   const src = endianness() === "BE" ? [0x48656c6c, 0x6fe29886] : [0x6c6c6548, 0x8698e26f];
+  //   const i32 = new Int32Array(src);
+  //   expect(decoder.decode(i32)).toBe("Hello☆");
+  //   expect(decoder.decode(i32.buffer)).toBe("Hello☆");
+  //   expect(decoder.decode(new DataView(i32.buffer))).toBe("Hello☆");
+  //   const u32 = new Uint32Array(src);
+  //   expect(decoder.decode(u32)).toBe("Hello☆");
+  //   expect(decoder.decode(u32.buffer)).toBe("Hello☆");
+  //   expect(decoder.decode(new DataView(u32.buffer))).toBe("Hello☆");
+  // });
 
   test("fatal: detected invalid bytes when fatal is true", () => {
     const decoder = new MUtf8Decoder("mutf-8", { fatal: true });

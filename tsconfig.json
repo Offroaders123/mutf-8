@@ -1,7 +1,14 @@
 {
+  "extends": "assemblyscript/std/assembly.json",
   "compilerOptions": {
-    "moduleResolution": "node",
+    "module": "ESNext",
+    "noEmit": true,
     "strict": true,
-    "target": "es2018"
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    // "noUncheckedIndexedAccess": true,
+    "allowUnreachableCode": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }
